@@ -4,13 +4,32 @@ using AppTheater.Entities;
 using AppTheater.Entities.EntityExtensions;
 using AppTheater.Menu;
 using AppTheater.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using System.Text.Json;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
+//var options = new DbContextOptionsBuilder<AppTheaterDbContext>();//?????
+//var options = new DbContextOptions<AppTheaterDbContext>(); //dodane 22.11.2023
+//var actorRepository = new SqlRepository<Actor>(new AppTheaterDbContext(options), new ActorRepository(), new SuflerRepository());
+var services = new ServiceCollection();
+services.AddDbContext<AppTheaterDbContext>(options => options.UseSqlServer("Data Source = LAPTOP - UN6NDU9J\\SQLEXPRESS; Initial Catalog = AppTheaterStorage; Integrated Security = True"));
+//var serviceProvider = services.BuildServiceProvider();
 
-var actorRepository = new SqlRepository<Actor>(new AppTheaterDbContext(), new ActorRepository(), new SuflerRepository());
+/* A) var services = new ServiceCollection();
+services.AddDbContext<AppTheaterDbContext>(options => options.UseSqlServer("Data Source = LAPTOP - UN6NDU9J\\SQLEXPRESS; Initial Catalog = AppTheaterStorage; Integrated Security = True"));
+A)*/
+/*var connectionString = "Data Source = LAPTOP - UN6NDU9J\\SQLEXPRESS; Initial Catalog = AppTheaterStorage; Integrated Security = True";
+var options = new DbContextOptionsBuilder<AppTheaterDbContext>()
+                .UseSqlServer(connectionString)
+                .Options;
 
+using (var context = new AppTheaterDbContext(options))
+{
+    context.Database.EnsureCreated();
 
-
+}B)*/
 Console.WriteLine("Witaj w programie INSPICJENT");
 Console.WriteLine("");
 MainMenu.ShowMainMenu();
@@ -19,7 +38,7 @@ MainMenu.ShowMainMenu();
 AddActors(actorRepository);
 AddSuflers(actorRepository);
 WriteAlToConsole(actorRepository); */
-
+/*
 static void AddPlays(IWriteRepository<Play> playsrepository)
 {
     Console.WriteLine("Jeszcze nie wiem co");
@@ -49,7 +68,7 @@ static void WriteAllToConsole(IReadRepository <IEntity> readRepository)
         Console.WriteLine(item);
     }
 }
-
+*/
 
 /*actorRepository.Add(new Actor { Name = "Ireneusz Pastuszak" }); //dodawanie imion i nazwisk przez Console.ReadLine ale przez wykorzystanie MENU UI
 actorRepository.Add(new Actor { Name = "Kinga Piąty" });

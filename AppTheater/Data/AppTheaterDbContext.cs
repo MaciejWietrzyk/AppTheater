@@ -14,20 +14,22 @@ namespace AppTheater.Data
         public AppTheaterDbContext(DbContextOptions<AppTheaterDbContext> options) : base(options)
         {
         }
-        public DbSet<Actor> Actors { get; set; } //zwrócić uwagę w kontekście rozbudowania kodu czy
-                                                    //nazwy nie bedą się powielać
-        public DbSet<Sufler> Suflers => Set<Sufler>();
+
+        public DbSet<Actor> Actors { get; set; } 
+        public DbSet<Sufler> Suflers { get; set; }
 
         public DbSet<Play> Plays { get; set; }
 
-        public DbSet<Rehearsal> Rehearals => Set<Rehearsal>();
+        public DbSet<Rehearsal> Rehearsals { get; set; }
 
-             
+        public DbSet<Cast> Casts { get; set; }
 
-       /* protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-        {
-            base.OnConfiguring(optionsBuilder);
-            optionsBuilder.UseInMemoryDatabase("StorageAppDb"); //czy to dalej in memory?
-        }*/
+
+
+        //protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        //{
+        //    base.OnConfiguring(optionsBuilder);
+        //    optionsBuilder.UseInMemoryDatabase("StorageAppDb"); //czy to dalej in memory?
+        //}
     }
 }

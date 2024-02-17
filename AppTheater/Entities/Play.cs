@@ -18,16 +18,38 @@ namespace AppTheater.Entities
         public int Number { get; set; } //jeżeli ID zadziała w połączeniu z Aktorami i Suflerami to usunąć
         public List<Actor> Actors { get; } = new List<Actor>(); // dodane 05.11.2023
         public List<Sufler> Suflers { get; } = new List<Sufler>();
+        public List<Cast> Casts { get; set; } = new List<Cast>();
 
-      /*  public Play(string title, DateTime date, string startTime, string endTime, int number)
+        /*  public Play(string title, DateTime date, string startTime, string endTime, int number)
+          {
+              Title = title;
+              Date = date;
+              StartTime = startTime;
+              EndTime = endTime;
+              Number = number;
+          }
+        */
+        public event EventHandler TitleChanged;
+
+        public void SetTitle(string newTitle)
         {
-            Title = title;
-            Date = date;
-            StartTime = startTime;
-            EndTime = endTime;
-            Number = number;
+            if (Title != newTitle)
+            {
+                Title = newTitle;
+
+                
+                OnTitleChanged();
+            }
         }
-      */
+        public string GetTitle() //do usunięcia
+        {
+            return Title;
+        }
+        protected virtual void OnTitleChanged()
+        {
+            
+            TitleChanged?.Invoke(this, EventArgs.Empty);
+        }
         public void AddActor(Actor actor)
         {
             Actors.Add(actor);

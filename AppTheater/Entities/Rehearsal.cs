@@ -14,6 +14,7 @@ namespace AppTheater.Entities
         public string? EndTime { get; set; }
         public List<Actor> Actors { get; } = new List<Actor>(); // dodane 06.11.2023
         public List<Sufler> Suflers { get; } = new List<Sufler>();
+        public List<Cast> Casts { get; set; } = new List<Cast>();
 
         public void AddActor(Actor actor)
         {

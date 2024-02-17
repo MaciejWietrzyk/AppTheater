@@ -1,4 +1,5 @@
-﻿using AppTheater.Entities;
+﻿using AppTheater.Data;
+using AppTheater.Entities;
 using AppTheater.Menu;
 using System;
 using System.Collections.Generic;
@@ -14,11 +15,11 @@ namespace AppTheater.Repositories
         private readonly List<Sufler> _suflers = new();
         //static private int _lastUsedId;
 
-        public SuflerRepository() 
+        /*public SuflerRepository() 
         {
            
             InitializeLastUsedId();
-        }
+        }*/
         public void InitializeLastUsedId()
         {
             if (File.Exists("LastUsedId.txt"))
@@ -41,8 +42,8 @@ namespace AppTheater.Repositories
 
         public void Add(Sufler sufler)
         {
-            MainMenu._lastUsedId++;
-            sufler.Id = MainMenu._lastUsedId; // zamieniłem sufler.Id na actor.Id próba zapisuj jednego Id dla wszystkich ale nie działa, może generic?
+           // MainMenu._lastUsedId++;
+           // sufler.Id = MainMenu._lastUsedId; // zamieniłem sufler.Id na actor.Id próba zapisuj jednego Id dla wszystkich ale nie działa, może generic?
             _suflers.Add(sufler);
             File.WriteAllText("LastUsedId.txt", MainMenu._lastUsedId.ToString());
             //SuflerAdded?.Invoke(this, actor);
@@ -53,9 +54,19 @@ namespace AppTheater.Repositories
         {
             Console.WriteLine($"Event odpalony {sufler.Name} dodano pomyślnie");
         }
-        public Sufler GetById(int id)
+        /*  public Sufler GetById(int id)
+          {
+              return _suflers.FirstOrDefault(item => item.Id == id);
+          }*/
+
+        public Sufler GetById(int suflerId)//int id) )
         {
-            return _suflers.FirstOrDefault(item => item.Id == id);
+            //return _actors.FirstOrDefault(item  => item.Id == id);
+            Sufler sufler = _context.Suflers.Find(suflerId);
+
+            // Zwróć znalezionego aktora (lub null, jeśli nie został znaleziony).
+            return sufler;
+
         }
 
         public List<Sufler> GetEmployees() 
@@ -79,6 +90,34 @@ namespace AppTheater.Repositories
             {
                 Console.WriteLine($"Inspicjent o ID {id} nie został znaleziony.");
             }
+        }
+
+        private readonly AppTheaterDbContext _context;
+
+        public SuflerRepository(AppTheaterDbContext dbContext)
+        {
+            _context = dbContext;
+        }
+
+        public void AddSuflerToSqlServer(Sufler sufler)
+        {
+            _context.Suflers.Add(sufler);
+            _context.SaveChanges();
+        }
+
+        public void RemoveSuflerFromSqlServer(int suflerId)
+        {
+            Sufler suflerToRemove = _context.Suflers.Find(suflerId);
+
+            if (suflerToRemove != null)
+            {
+                _context.Suflers.Remove(suflerToRemove);
+                _context.SaveChanges();
+            }
+        }
+        public List<Sufler> GetSuflersFromSqlServer()
+        {
+            return _context.Suflers.ToList();
         }
     }
 

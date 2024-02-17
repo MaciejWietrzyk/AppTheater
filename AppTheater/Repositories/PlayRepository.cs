@@ -1,4 +1,5 @@
-﻿using AppTheater.Entities;
+﻿using AppTheater.Data;
+using AppTheater.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -15,8 +16,8 @@ namespace AppTheater.Repositories
         private int _lastUsedPlayId;
         public void Add(Play play) //może AddPlay
         {
-            _lastUsedPlayId++;
-            play.Id = _lastUsedPlayId;
+            //_lastUsedPlayId++;
+            //play.Id = _lastUsedPlayId; zmiana z 08.01.2024
             _plays.Add(play);
             File.WriteAllText("LastUsedPlayId.txt", _lastUsedPlayId.ToString());
             //Invoke'i będą?
@@ -48,7 +49,7 @@ namespace AppTheater.Repositories
             {
                 _plays.Remove(playToRemove);
                 Console.Write("Spektakl ");
-                Console.ForegroundColor = ConsoleColor.Red;
+                Console.ForegroundColor = ConsoleColor.Blue;
                 Console.Write(playToRemove.Title);
                 Console.ResetColor();
                 Console.WriteLine($" o ID {id}. został usunięty.");
@@ -66,8 +67,43 @@ namespace AppTheater.Repositories
         }
         public Play GetPlayById(int id)
         {
-            return _plays.FirstOrDefault(item => item.Id == id);
+            // return _plays.FirstOrDefault(item => item.Id == id);
+            Play play = _context.Plays.Find(id);
+            return play;
+        }
+
+        // dodawanie do sqlserver
+        private readonly AppTheaterDbContext _context;
+
+        public PlayRepository(AppTheaterDbContext context)
+        {
+            _context = context;
+        }
+
+        public void AddPlayToSqlServer(Play play) 
+        {
+            _context.Plays.Add(play);
+            _context.SaveChanges();
+        }
+
+        public void RemovePlayFromSqlServer(int playId)  // umieścić wywołanie metody 
+        {
+            Play playToRemove = _context.Plays.Find(playId);
+
+            if (playToRemove != null)
+            {
+                _context.Plays.Remove(playToRemove);
+                _context.SaveChanges();
+                Console.Write("Spektakl ");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write(playToRemove.Title);
+                Console.ResetColor();
+                Console.WriteLine($" o ID {playId}. został usunięty.");
+            }
+            // Dodać obsługę sytuacji, gdy sztuka o danym identyfikatorze nie została znaleziona
+            // Na przykład rzucenie wyjątku, zwrócenie kodu błędu, itp.
         }
     }
-   
+
+
 }

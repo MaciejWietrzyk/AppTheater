@@ -1,4 +1,6 @@
-﻿using AppTheater.Entities;
+﻿using AppTheater.Data;
+using AppTheater.Entities;
+using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,8 +16,8 @@ namespace AppTheater.Repositories
         private int _lastUsedRehearsalId;
         public void AddRehearsal(Rehearsal rehearsal) // czy lepiej nazwa Add
         {
-            _lastUsedRehearsalId++;
-            rehearsal.Id = _lastUsedRehearsalId;
+           // _lastUsedRehearsalId++;
+           // rehearsal.Id = _lastUsedRehearsalId;
             _rehearsal.Add(rehearsal);
             File.WriteAllText("LastUsedRehearsalId.txt", _lastUsedRehearsalId.ToString());
             //Invoke'i będą?
@@ -65,7 +67,39 @@ namespace AppTheater.Repositories
         }
         public Rehearsal GetRehearsalById(int id)
         {
-            return _rehearsal.FirstOrDefault(item => item.Id == id);
+            //return _rehearsal.FirstOrDefault(item => item.Id == id);
+            Rehearsal rehearsal = _context.Rehearsals.Find(id);
+            return rehearsal;
+        }
+
+        private readonly AppTheaterDbContext _context;
+
+        public RehearsalRepository(AppTheaterDbContext context)
+        {
+            _context = context;
+        }
+        public void AddRehearsalToSqlServer(Rehearsal rehearsal)
+        {
+            _context.Rehearsals.Add(rehearsal);
+            _context.SaveChanges();
+        }
+
+        public void RemoveRehearsalFromSqlServer(int rehearsalId)  // umieścić wywołanie metody 
+        {
+            Rehearsal rehearsalToRemove = _context.Rehearsals.Find(rehearsalId);
+
+            if (rehearsalToRemove != null)
+            {
+                _context.Rehearsals.Remove(rehearsalToRemove);
+                _context.SaveChanges();
+                Console.Write("Próba ");
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.Write(rehearsalToRemove.Title);
+                Console.ResetColor();
+                Console.WriteLine($" o ID {rehearsalId}. został usunięty.");
+            }
+            // Dodać obsługę sytuacji, gdy sztuka o danym identyfikatorze nie została znaleziona
+            // Na przykład rzucenie wyjątku, zwrócenie kodu błędu, itp.
         }
     }
 

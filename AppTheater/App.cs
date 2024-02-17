@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace AppTheater
 {
-    public class App
+    public class App : IApp
     {
         private readonly AppTheaterDbContext _appTheatreDbContext;
         public App(AppTheaterDbContext appTheaterDbContext)

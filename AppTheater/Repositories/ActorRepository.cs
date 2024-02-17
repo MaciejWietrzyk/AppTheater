@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using AppTheater.Menu;
+using AppTheater.Data;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 
 namespace AppTheater.Repositories
 {
@@ -15,8 +17,12 @@ namespace AppTheater.Repositories
     { 
         private readonly List<Actor> _actors = new();
         //static private int _lastUsedId;
+        DbContextOptions<AppTheaterDbContext> dbContextOptions = new DbContextOptionsBuilder<AppTheaterDbContext>()
+   .UseSqlServer("Data Source = LAPTOP-UN6NDU9J\\SQLEXPRESS; Initial Catalog = AppTheaterStorage; Integrated Security = True")
+   .Options;// dodano 01.01.2024
         public ActorRepository()
         {
+            _context = new AppTheaterDbContext(dbContextOptions);// dodano 01.01.2024
             InitializeLastUsedId();
             ActorTest += HandleActorTest;
             ActorRemoved += HandleActorRemove;
@@ -56,8 +62,8 @@ namespace AppTheater.Repositories
 
         public void Add(Actor actor)
         {
-            MainMenu._lastUsedId++;
-            actor.Id = MainMenu._lastUsedId;
+           // MainMenu._lastUsedId++;
+            //actor.Id = MainMenu._lastUsedId; //zmiana z 04.01.2024
             _actors.Add(actor);
             File.WriteAllText("LastUsedId.txt", MainMenu._lastUsedId.ToString());
            // ActorAdded?.Invoke(this, actor);
@@ -72,13 +78,21 @@ namespace AppTheater.Repositories
             }
         }
 
-        public Actor GetById(int id) 
-        { 
-            return _actors.FirstOrDefault(item  => item.Id == id);
-        }
-
-        public List<Actor> GetEmployees() //zastanowić się czy poźniej zastąpić przez GetById ?
+        public Actor GetById(int actorId)//int id) )
         {
+            //return _actors.FirstOrDefault(item  => item.Id == id);
+            Actor actor = _context.Actors.Find(actorId);
+
+            // Zwróć znalezionego aktora (lub null, jeśli nie został znaleziony).
+            return actor;
+
+        }
+        public List<Actor> GetActorsFromSqlServer()
+        {
+            return _context.Actors.ToList();
+        }
+        public List<Actor> GetEmployees() //zastanowić się czy poźniej zastąpić przez GetById ?
+        {                                  // lub w ogóle usunąć bo będzie używany SQL
             return _actors; 
         }
 
@@ -88,6 +102,10 @@ namespace AppTheater.Repositories
             if (actorRemoved != null)
             {
                 _actors.Remove(actorRemoved);
+
+                _context.Actors.Remove(actorRemoved); //dodane 07.01.2024 nie wiem czy jest potrzebne bo samo z siebie nic nie zmieniło
+                _context.SaveChanges();
+
                 Console.Write("Aktor ");
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.Write(actorRemoved.Name);
@@ -101,6 +119,32 @@ namespace AppTheater.Repositories
             }
         }
 
-  
+        // dodawanie do sqlserver
+        private readonly AppTheaterDbContext _context;
+
+        public ActorRepository(AppTheaterDbContext context)
+        {
+            _context = context;
+        }
+
+        // Zmieniona nazwa metody 27.12.2023
+        public void AddToSqlServer(Actor actor)
+        {
+            _context.Actors.Add(actor);
+            _context.SaveChanges();
+        }
+
+        public void RemoveFromSqlServer(int actorId) 
+        {
+            Actor actorToRemove = _context.Actors.Find(actorId);
+
+            if (actorToRemove != null)
+            {
+                _context.Actors.Remove(actorToRemove);
+                _context.SaveChanges();
+            }
+        }
+
+
     }
 }

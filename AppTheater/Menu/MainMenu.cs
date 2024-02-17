@@ -1,6 +1,10 @@
-﻿using AppTheater.Entities;
+﻿using AppTheater.Data;
+using AppTheater.Entities;
 using AppTheater.Entities.EntityExtensions;
 using AppTheater.Repositories;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -13,12 +17,19 @@ namespace AppTheater.Menu
     public static class MainMenu
     {
         public static int _lastUsedId;
-        public static void ShowMainMenu()
+        private static DbContextOptions<AppTheaterDbContext> dbContextOptions; //dodano 01.02.2024
+        private static AppTheaterDbContext dbContext;
+        public static void ShowMainMenu(List<Actor> listActors, List<Sufler> listSuflers)
         {
+            DbContextOptions<AppTheaterDbContext> dbContextOptions = new DbContextOptionsBuilder<AppTheaterDbContext>()
+    .UseSqlServer("Data Source = LAPTOP-UN6NDU9J\\SQLEXPRESS; Initial Catalog = AppTheaterStorage; Integrated Security = True")
+    .Options; //dodano 30.12.2023
+            AppTheaterDbContext dbContext = new AppTheaterDbContext(dbContextOptions); //dodano 30.12.2023
             ActorRepository actorRepository = new ActorRepository();
-            SuflerRepository suflerRepository = new SuflerRepository();
-            PlayRepository playRepository = new PlayRepository();
-            RehearsalRepository rehearsalRepository = new RehearsalRepository();
+            SuflerRepository suflerRepository = new SuflerRepository(dbContext);
+            PlayRepository playRepository = new PlayRepository(dbContext);// argument dodano 30.12.2023
+            RehearsalRepository rehearsalRepository = new RehearsalRepository(dbContext);
+            CastRepository castRepository = new CastRepository(dbContext);
 
             bool exit = false;
 
@@ -45,7 +56,7 @@ namespace AppTheater.Menu
                         InspicjentMenu(suflerRepository);
                         break;
                     case "3":
-                        AddPlayMenu(playRepository);
+                        AddPlayMenu(playRepository, castRepository, listActors, listSuflers);
                         break;
                     case "4":
                         AddRehearsalMenu(rehearsalRepository);
@@ -111,6 +122,7 @@ namespace AppTheater.Menu
                 {
                     newActor.Name = name;
                     actorRepository.Add(newActor);
+                    actorRepository.AddToSqlServer(newActor); //dodano 27.12.2023
                     SaveActorFiles(newActor);
                     SaveAuditFiles(newActor);
 
@@ -184,6 +196,7 @@ namespace AppTheater.Menu
                 {
                     newSufler.Name = name;
                     suflerRepository.Add(newSufler);
+                    suflerRepository.AddSuflerToSqlServer(newSufler);
                     SaveSuflerFiles(newSufler);
                     SaveSuflerToJsonFile(newSufler);
                 }
@@ -206,6 +219,7 @@ namespace AppTheater.Menu
                 if (suflerToRemove != null)
                 {
                     suflerRepository.RemoveSuflerById(suflerId);
+                    suflerRepository.RemoveSuflerFromSqlServer(suflerId);
                     UpdateSuflerFile(suflerRepository.GetEmployees());
                     Console.WriteLine($"Inspicjent o ID {suflerId} został usunięty z bazy danych oraz zaktualizowano plik z pracownikami.");
                 }
@@ -219,12 +233,12 @@ namespace AppTheater.Menu
                 Console.WriteLine("Podano nieprawidłowe ID aktora.");
             }
         }
-        private static void AddPlayMenu(PlayRepository playRepository)
+        private static void AddPlayMenu(PlayRepository playRepository, CastRepository castRepository, List<Actor> listActors, List<Sufler> listSuflers)
         {
             while (true)
             {
                 Console.WriteLine("===== Spektakle =====");
-                Console.WriteLine("1. Lista spektakli");
+                Console.WriteLine("1. Lista i obsada spektakli");
                 Console.WriteLine("2. Dodaj spektakl");
                 Console.WriteLine("3. Usuń spektakl");
                 Console.WriteLine("4. Wróć do głównego menu");
@@ -235,7 +249,7 @@ namespace AppTheater.Menu
                 switch (choice)
                 {
                     case "1":
-                        ShowAllPlays(playRepository);
+                        ShowAllPlays(playRepository, castRepository, listActors, listSuflers);
                         break;
                     case "2":
                         AddPlay(playRepository);
@@ -260,7 +274,19 @@ namespace AppTheater.Menu
                 newPlay.Date = DateTime.Now;
                 Console.WriteLine("Podaj tytuł spektaklu lub wpisz 'q' aby wrócić do menu: ");
                 string title = Console.ReadLine();
-
+                newPlay.Title = title;                   //dodane 28.01.2024
+                newPlay.TitleChanged += TitleChangedEventHandler;
+                newPlay.SetTitle(title);
+                
+                static void TitleChangedEventHandler(object sender, EventArgs e)
+                {
+                    
+                    Console.WriteLine("Zmieniono tytuł spektaklu!");
+                }
+                Cast newCast = new Cast();
+                newCast.Title = title;  
+                                        
+                newPlay.TitleChanged += (sender, args) => newCast.Title = ((Play)sender).Title;
                 if (title == "q")
                 {
                     break;
@@ -286,6 +312,7 @@ namespace AppTheater.Menu
                         newPlay.EndTime = endTime;
 
                         playRepository.Add(newPlay);
+                        playRepository.AddPlayToSqlServer(newPlay);
 
                         SavePLayFiles(newPlay);
                         SavePlayToJsonFile(newPlay, inputDate);
@@ -323,11 +350,91 @@ namespace AppTheater.Menu
 
             Console.WriteLine($"Spektakl zapisano w pliku: {fileName}");
         }
-        private static void ShowAllPlays(PlayRepository playRepository) //to chyba do PlayRepository
+        private static void ShowAllPlays(PlayRepository playRepository, CastRepository castRepository, List<Actor> listActors, List<Sufler> listSuflers) //to chyba do PlayRepository
         {
             Console.WriteLine("===== Lista spektakli =====");
 
-            MainMenu.OpenFile("Lista Spektakli.txt");
+            MainMenu.OpenFile("Lista Spektakli.txt"); //zaimplementować korzystanie z bazy danych
+
+            Console.WriteLine("1. Wybierz listę spektakli"); 
+            Console.WriteLine();
+            Console.WriteLine("Jeżeli chcesz dodać obsadę naciśnij 'o'");
+            Console.WriteLine("Jeżeli chcesz usunąć osoby z obsady naciśnij 'z'"); // dodać opcje cała i pojedynczy?
+            Console.WriteLine("Jeżeli chcesz wrócić do menu naciśnij 'q'"); //jeszcze obsada dodawana ad hoc
+            string choice = Console.ReadLine();
+
+            switch (choice)
+            {
+                case "1":
+                    ShowAllPlays(playRepository, castRepository,listActors, listSuflers); //tu trzeba coś zmienić - do wymyślenia
+                    break;
+                case "o":
+                    Cast castToAdd = new Cast();
+                    ActorRepository actorRepository = new ActorRepository();
+                    SuflerRepository suflerRepository = new SuflerRepository(dbContext);
+
+                    // Pobieram listę aktorów z bazy danych
+                    List<Actor> existingActors = actorRepository.GetActorsFromSqlServer();// to pewnie jeszcze suflerzy
+                    List<Sufler> existingSuflers = suflerRepository.GetSuflersFromSqlServer();
+                    // Wyświetlam listę aktorów do wyboru
+                    Console.WriteLine("Lista dostępnych aktorów:");
+                    for (int i = 0; i < existingActors.Count; i++)
+                    {
+                        Console.WriteLine($"{i + 1}. {existingActors[i].Name}");
+                    }
+                    Console.WriteLine("");
+                    // Użytkownik wybiera aktora
+                    Console.WriteLine("Podaj numer aktora, którego chcesz dodać do obsady:");
+                    if (int.TryParse(Console.ReadLine(), out int actorChoice) && actorChoice >= 1 && actorChoice <= existingActors.Count)
+                    {
+                        // Wybrany aktor
+                        Actor selectedActor = existingActors[actorChoice - 1];
+
+                        // Dodaję aktora do obsady in-memory
+                        castToAdd.AddActor(selectedActor);
+                        // Dodaję aktora do obsady w bazie danych
+
+                        AppTheaterDbContext _context = new AppTheaterDbContext(dbContextOptions);
+                        castToAdd.SaveToDatabase(_context);
+                        //sprawdź czy obiekt ActorRepository użyje tego samego obiektu dbContextOptions, co AppTheaterDbContext.
+
+                        // Dodaję obsadę do bazy danych
+                        castRepository.AddCastToSqlServer(castToAdd);
+                    }
+                    else
+                    {
+                        Console.WriteLine("Nieprawidłowy numer aktora. Operacja przerwana.");
+                    }
+                    break;
+                    //jeszcze suflerzy
+                case "z":
+                    ActorRepository actorRepositor = new ActorRepository(); // te zmienne trzeba wrzucić wyżej bo się powtarzają z case"o"
+                    SuflerRepository suflerRepositor = new SuflerRepository(dbContext);// różnią się tylko końcówką
+                    List<Actor> existingActor = actorRepositor.GetActorsFromSqlServer();
+                    List<Sufler> existingSufler = suflerRepositor.GetSuflersFromSqlServer();
+                    CastRepository localCastRepository = new CastRepository(dbContext);
+                    
+                    // Użytkownik wybiera aktora
+                    Console.WriteLine("Podaj numer aktora lub suflera, którego chcesz dodać do obsady:");
+                    localCastRepository.ChangeCast(listActors, listSuflers); 
+
+                    Console.WriteLine("Podaj numer aktora/suflera(sprawdź czy jest wspólne id), którego chcesz usunąć z obsady:");
+                    if (int.TryParse(Console.ReadLine(), out int selectedActorId) && selectedActorId >= 1 && selectedActorId <= existingActor.Count)
+                    {
+
+                    }
+                    if (int.TryParse(Console.ReadLine(), out int selectedSuflerId) && selectedSuflerId >= 1 && selectedSuflerId <= existingSufler.Count)
+                    {
+
+                    }
+
+                    break;
+                case "q":
+                    return;
+                default:
+                    Console.WriteLine("Nieprawidłowa opcja. Spróbuj ponownie.");
+                    break;
+            }
         }
         private static void RemovePlay(PlayRepository playRepository) //to też chyba do PlayRepository
         {
@@ -340,6 +447,7 @@ namespace AppTheater.Menu
                     {
                         //  _plays.Remove(playToRemove); dlaczego taki zapis nie przechodzi?
                         playRepository.RemovePlayById(playId);
+                        playRepository.RemovePlayFromSqlServer(playId);// czy  playToRemove
                         PlayRemovalSavedToJson(playToRemove);
                         UpdatePlayFile(playRepository.GetPlays());
                         Console.WriteLine($"Spektakl o ID {playId} został usunięty z bazy danych oraz zaktualizowano plik ze spektaklami.");
@@ -467,6 +575,7 @@ namespace AppTheater.Menu
                         newRehearsal.EndTime = endTime;
 
                         rehearsalRepository.AddRehearsal(newRehearsal);
+                        rehearsalRepository.AddRehearsalToSqlServer(newRehearsal);
 
                         SaveRehearsalFiles(newRehearsal);
                         SaveRehearsalToJsonFile(newRehearsal, inputDate);
@@ -501,6 +610,7 @@ namespace AppTheater.Menu
                     if (rehearsalToRemove != null)
                     {
                         rehearsalRepository.RemoveRehearsalById(rehearsalId);
+                        rehearsalRepository.RemoveRehearsalFromSqlServer(rehearsalId);
                         RehearsalRemovalSavedToJson(rehearsalToRemove);
                         UpdateRehearsalFile(rehearsalRepository.GetRehearsal());
                         Console.WriteLine($"Spektakl o ID {rehearsalId} został usunięty z bazy danych oraz zaktualizowano plik z próbami.");
@@ -933,6 +1043,7 @@ namespace AppTheater.Menu
                 if (actorToRemove != null)
                 {
                     actorRepository.RemoveActorById(actorId);
+                    actorRepository.RemoveFromSqlServer(actorId);
                     ActorRemovalSavedToJson(actorToRemove); 
                     UpdateActorFile(actorRepository.GetEmployees(), suflerRepository.GetEmployees()); // tu może być błąd z usuwaniem wszystkich
                     ShowAllEmployees(actorRepository); 

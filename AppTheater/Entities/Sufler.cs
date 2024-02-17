@@ -6,8 +6,9 @@ using System.Threading.Tasks;
 
 namespace AppTheater.Entities
 {
-    public class Sufler : Actor
+    public class Sufler : EntityBase
     {
+        public string? Name { get; set; }
         public override string ToString() => base.ToString() + " (Sufler)";
     }
 }

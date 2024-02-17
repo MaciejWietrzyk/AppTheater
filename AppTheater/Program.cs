@@ -1,4 +1,5 @@
 ﻿
+using AppTheater;
 using AppTheater.Data;
 using AppTheater.Entities;
 using AppTheater.Entities.EntityExtensions;
@@ -14,7 +15,10 @@ using static System.Runtime.InteropServices.JavaScript.JSType;
 //var options = new DbContextOptions<AppTheaterDbContext>(); //dodane 22.11.2023
 //var actorRepository = new SqlRepository<Actor>(new AppTheaterDbContext(options), new ActorRepository(), new SuflerRepository());
 var services = new ServiceCollection();
-services.AddDbContext<AppTheaterDbContext>(options => options.UseSqlServer("Data Source = LAPTOP - UN6NDU9J\\SQLEXPRESS; Initial Catalog = AppTheaterStorage; Integrated Security = True"));
+services.AddSingleton<IApp, App>();
+services.AddDbContext<AppTheaterDbContext>(options => options.UseSqlServer("Data Source = LAPTOP-UN6NDU9J\\SQLEXPRESS; Initial Catalog = AppTheaterStorage; Integrated Security = True"));
+var serviceProvider = services.BuildServiceProvider();
+var app = serviceProvider.GetService<IApp>();
 //var serviceProvider = services.BuildServiceProvider();
 
 /* A) var services = new ServiceCollection();
@@ -30,14 +34,13 @@ using (var context = new AppTheaterDbContext(options))
     context.Database.EnsureCreated();
 
 }B)*/
+List<Actor> listActors = new();
+List<Sufler> listSuflers = new();
 Console.WriteLine("Witaj w programie INSPICJENT");
 Console.WriteLine("");
-MainMenu.ShowMainMenu();
+MainMenu.ShowMainMenu(listActors, listSuflers);
 
-/*
-AddActors(actorRepository);
-AddSuflers(actorRepository);
-WriteAlToConsole(actorRepository); */
+
 /*
 static void AddPlays(IWriteRepository<Play> playsrepository)
 {
@@ -70,10 +73,6 @@ static void WriteAllToConsole(IReadRepository <IEntity> readRepository)
 }
 */
 
-/*actorRepository.Add(new Actor { Name = "Ireneusz Pastuszak" }); //dodawanie imion i nazwisk przez Console.ReadLine ale przez wykorzystanie MENU UI
-actorRepository.Add(new Actor { Name = "Kinga Piąty" });
-actorRepository.Add(new Actor { Name = "Monika Wenta" });
-actorRepository.Add(new Actor { Name = "Jerzy Pal" });*/
 
 /*GetActorById(actorRepository);
 
